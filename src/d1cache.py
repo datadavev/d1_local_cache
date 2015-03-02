@@ -8,11 +8,14 @@ import datetime
 from d1_local_cache.util import mjd
 
 HOMEPATH=".dataone"
-CONFIGFILE="cache.conf"
+#CONFIGFILE="cache.conf"
+CONFIGFILE = None
 
-def readConfiguration():
+def readConfiguration(configfile=CONFIGFILE):
   fbase = os.path.join(os.environ["HOME"], HOMEPATH)
-  fconfig = os.path.join(fbase, CONFIGFILE)
+  fconfig = os.path.join(fbase, configfile)
+  conf = {}
+  '''
   conf = {'sysmcache': {'database':'cache.sqdb',
                         'path':fbase,
                         'cert': None,
@@ -21,14 +24,15 @@ def readConfiguration():
                         'baseurl':'https://cn.dataone.org/cn'},
           'python':{'path':[]},
           }
+  '''
   yconf = {}
   try:
     yconf = yaml.load(file(fconfig))
   except Exception as e:
     logging.warn(e)
-  for k in yconf:
+  for k in yconf.keys():
     conf[k] = yconf[k]
-  return conf
+  return yconf
 
 
 def setupEnvironment(paths):
@@ -93,8 +97,8 @@ OP_STATE="state"
 OP_UPDATE="update"
 OP_COUNT="count"
 
-def main(operation=OP_STATE):
-  conf = readConfiguration()
+def main(operation=OP_STATE, configfile=CONFIGFILE):
+  conf = readConfiguration(configfile=configfile)
   #setupEnvironment(conf['python']['path'])
   from d1_local_cache.ocache.object_cache_manager import ObjectCache
   from d1_local_cache.util import instrument
@@ -116,8 +120,9 @@ def main(operation=OP_STATE):
     #newest = "2013-05-20T17:42:54.000000+00:00"
     logging.info("Start date is: %s" % newest)
     #purgeEverything(cache)
-    cache.populateObjectFormats()
+    #cache.populateObjectFormats()
     cache.loadSysmetaContent(startTime=newest, startFrom=0, onNextPage=onNextPage)
+    #cache.loadSystemMetadata(withstatus=404)
     return
 
   if operation == OP_COUNT:
@@ -128,7 +133,16 @@ def main(operation=OP_STATE):
   
 
 if __name__ == "__main__":
+  try:
+    configfile = sys.argv[1]
+    if not os.path.exists(configfile):
+      raise ValueError("File not found: %s" % configfile)
+  except Exception as e:
+    logging.error(e)
+    logging.error("Configuration file is required parameter.")
+    sys.exit()
+
   logging.basicConfig(level=logging.INFO)
-  main(OP_STATE)
-  main(OP_UPDATE)
+  main(OP_STATE, configfile=configfile)
+  main(OP_UPDATE, configfile=configfile)
   #main(OP_COUNT)

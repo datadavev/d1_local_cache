@@ -310,7 +310,7 @@ class ObjectCache():
     return yaml.dump(res)
     
 
-  def loadSystemMetadata(self):
+  def loadSystemMetadata(self, withstatus=0):
     #Queue to hold the tasks that need to be processed
     Q = Queue.Queue()
     CQ = deque([],100)
@@ -377,7 +377,7 @@ class ObjectCache():
     #              .filter(models.CacheEntry.sysmstatus==0)
     #Load system metadata for everything
     work = session.query(models.CacheEntry)\
-                  .filter(models.CacheEntry.sysmstatus==0)
+                  .filter(models.CacheEntry.sysmstatus==withstatus)
     i=0
     for o in work:
       Q.put( [i, o.pid] )
